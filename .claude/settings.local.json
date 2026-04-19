@@ -17,7 +17,14 @@
       "Bash(xargs -I{} taskkill //F //PID {})",
       "Bash(npm --version)",
       "Bash(npm create *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p _handoff)",
+      "Bash(unzip -o bytesOs-handoff.zip -d _handoff)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:3000/api/dashboard)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(curl -s http://localhost:3001/test)"
     ]
   }
 }

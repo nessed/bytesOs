@@ -1,5 +1,3 @@
-const XLSX = require('xlsx');
-
 const PRICE_STANDARD = 300;
 const PRICE_FRIES = 380;
 
@@ -23,29 +21,31 @@ function parseDate(sheetName) {
   return `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function parseSheet(ws, sheetName) {
+// Accepts a 2D array of rows (strings/numbers) — works with both XLSX and Sheets API output
+function parseSheetRows(rows, sheetName) {
   const date = parseDate(sheetName);
   if (!date) return null;
 
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
   const orders = [];
   let currentSlot = null;
 
   for (const row of rows) {
-    if (typeof row[0] === 'string' && /^Slot\s+\d+/i.test(row[0])) {
-      currentSlot = row[0].trim();
+    const col0 = row[0] !== undefined ? String(row[0]) : '';
+    if (/^Slot\s+\d+/i.test(col0.trim())) {
+      currentSlot = col0.trim();
     }
 
-    const num = row[1];
-    const name = row[2];
-    const order = row[3];
-    const paid = row[4];
+    const rawNum = row[1];
+    const name = row[2] !== undefined ? String(row[2]) : '';
+    const order = row[3] !== undefined ? String(row[3]) : '';
+    const rawPaid = row[4];
 
-    const nameIsValid = typeof name === 'string' &&
-      name.trim() !== '' &&
-      name.trim().replace(/[^a-zA-Z0-9]/g, '').length >= 2;
+    const num = typeof rawNum === 'number' ? rawNum : parseFloat(rawNum);
+    const nameIsValid = name.trim() !== '' && name.trim().replace(/[^a-zA-Z0-9]/g, '').length >= 2;
 
-    if (typeof num === 'number' && nameIsValid) {
+    const paid = rawPaid === true || String(rawPaid).toUpperCase() === 'TRUE';
+
+    if (!isNaN(num) && num > 0 && nameIsValid) {
       const amount = parseOrderAmount(order);
       orders.push({
         slot: currentSlot,
@@ -53,7 +53,7 @@ function parseSheet(ws, sheetName) {
         normalizedName: name.trim().toLowerCase().replace(/\s+/g, ' '),
         order: order || '',
         amount,
-        paid: paid === true,
+        paid,
         date,
         sheetName,
       });
@@ -63,20 +63,4 @@ function parseSheet(ws, sheetName) {
   return orders;
 }
 
-function parseWorkbook(filePath) {
-  const wb = XLSX.readFile(filePath, { data_only: true });
-  const skipSheets = new Set(['Template To Duplicate', 'Finances']);
-  const allOrders = [];
-
-  for (const name of wb.SheetNames) {
-    if (skipSheets.has(name)) continue;
-    const ws = wb.Sheets[name];
-    const orders = parseSheet(ws, name);
-    if (orders) allOrders.push(...orders);
-  }
-
-  allOrders.sort((a, b) => a.date.localeCompare(b.date));
-  return allOrders;
-}
-
-module.exports = { parseWorkbook };
+module.exports = { parseSheetRows, parseDate };

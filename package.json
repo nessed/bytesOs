@@ -6,7 +6,9 @@
     "build": "npm run build --prefix frontend"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "googleapis": "^171.4.0",
     "xlsx": "^0.18.5"
   }
 }
