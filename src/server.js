@@ -29,12 +29,15 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 // Pakistan Standard Time = UTC+5, no DST
 const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
 
-// Returns the current calendar date in PKT (UTC+5)
+// Returns the current business date in PKT
+// Business day boundary is 4:00 AM PKT, so 12:00 AM to 3:59 AM shifts to the previous day.
 function getBusinessDate(now = new Date()) {
-  // Shift UTC → PKT by adding 5 h, then read date via UTC methods
-  const pkt = new Date(now.getTime() + PKT_OFFSET_MS);
-  const result = pkt.toISOString().slice(0, 10); // YYYY-MM-DD in PKT
-  console.log(`[getBusinessDate] UTC=${now.toISOString()} → PKT date=${result}`);
+  // Shift UTC → PKT by adding 5 h
+  // Shift business day back by 4 h
+  // Effective shift: +1 hour
+  const pktBusiness = new Date(now.getTime() + PKT_OFFSET_MS - 4 * 60 * 60 * 1000);
+  const result = pktBusiness.toISOString().slice(0, 10); // YYYY-MM-DD
+  console.log(`[getBusinessDate] UTC=${now.toISOString()} → Business date=${result}`);
   return result;
 }
 
@@ -190,6 +193,48 @@ function buildDashboard() {
   };
 }
 
+function buildFinances() {
+  const lifetimeRevenue = orders.reduce((s, o) => s + o.amount, 0);
+  const lifetimeProfit = Math.round(lifetimeRevenue * 0.52);
+  const lifetimePerPerson = Math.round(lifetimeProfit / 4);
+
+  const realizedRevenue = orders.filter(o => o.paid).reduce((s, o) => s + o.amount, 0);
+  const realizedProfit = Math.round(realizedRevenue * 0.52);
+  const realizedPerPerson = Math.round(realizedProfit / 4);
+
+  const outstanding = lifetimeRevenue - realizedRevenue;
+
+  const weekly = {};
+  for (const o of orders) {
+    const d = new Date(o.date + 'T00:00:00Z');
+    // Align to Monday
+    const day = d.getUTCDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    d.setUTCDate(d.getUTCDate() + diffToMonday);
+    
+    const weekLabel = `Week of ${MONTH_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    const sortKey = d.toISOString().slice(0, 10);
+    
+    if (!weekly[sortKey]) {
+      weekly[sortKey] = { sortKey, label: weekLabel, revenue: 0, profit: 0, perPerson: 0, count: 0, unpaidAmount: 0 };
+    }
+    weekly[sortKey].revenue += o.amount;
+    weekly[sortKey].count++;
+    if (!o.paid) weekly[sortKey].unpaidAmount += o.amount;
+  }
+  
+  const weeklyBreakdown = Object.values(weekly)
+    .sort((a,b) => b.sortKey.localeCompare(a.sortKey))
+    .map(w => {
+      w.profit = Math.round(w.revenue * 0.52);
+      w.perPerson = Math.round(w.profit / 4);
+      return w;
+    });
+
+  return { lifetimeRevenue, lifetimeProfit, lifetimePerPerson, realizedRevenue, realizedProfit, realizedPerPerson, outstanding, weeklyBreakdown };
+}
+
+app.get('/api/finances', (_, res) => res.json(buildFinances()));
 app.get('/api/summary', (_, res) => res.json(buildSummary()));
 app.get('/api/debt', (_, res) => res.json(buildDebt()));
 app.get('/api/customers', (_, res) => res.json(buildCustomers()));

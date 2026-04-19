@@ -36,21 +36,31 @@ const SunIcon = () => (
   </svg>
 );
 
+import type { View } from '../types';
+
 interface Props {
   onOpenLog: () => void;
   onSync: () => void;
   syncing: boolean;
   isDark: boolean;
   onToggleTheme: () => void;
+  view: View;
+  setView: (v: View) => void;
 }
 
-export default function TopBar({ onOpenLog, onSync, syncing, isDark, onToggleTheme }: Props) {
+export default function TopBar({ onOpenLog, onSync, syncing, isDark, onToggleTheme, view, setView }: Props) {
   return (
     <div className="topbar">
       <div className="tb-left">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="logo">B</div>
           <div className="tb-title">bytes<em>os</em></div>
+        </div>
+        <div className="view-switcher">
+          <button className={`view-tab ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>Dashboard</button>
+          <button className={`view-tab ${view === 'customers' ? 'active' : ''}`} onClick={() => setView('customers')}>Customers</button>
+          <button className={`view-tab ${view === 'debt' ? 'active' : ''}`} onClick={() => setView('debt')}>Debt</button>
+          <button className={`view-tab ${view === 'finances' ? 'active' : ''}`} onClick={() => setView('finances')}>Finances</button>
         </div>
       </div>
       <div className="tb-right">

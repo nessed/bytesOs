@@ -87,3 +87,26 @@ export interface DashboardData {
   openOrders: OpenOrder[];
   dailyBreakdown: DailyBreakdown[];
 }
+
+export interface WeeklyBreakdown {
+  sortKey: string;
+  label: string;
+  revenue: number;
+  profit: number;
+  perPerson: number;
+  count: number;
+  unpaidAmount: number;
+}
+
+export interface FinancesData {
+  lifetimeRevenue: number;
+  lifetimeProfit: number;
+  lifetimePerPerson: number;
+  realizedRevenue: number;
+  realizedProfit: number;
+  realizedPerPerson: number;
+  outstanding: number;
+  weeklyBreakdown: WeeklyBreakdown[];
+}
+
+export type View = 'dashboard' | 'customers' | 'debt' | 'finances';
