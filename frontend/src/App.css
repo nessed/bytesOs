@@ -1,6 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
+  --bg:          #ffffff;
+  --panel:       #ffffff;
+  --panel-2:     #f4f4f5;
+  --panel-3:     #e4e4e7;
+  --line:        #e4e4e7;
+  --line-soft:   #f4f4f5;
+  --ink:         #18181b;
+  --ink-2:       #52525b;
+  --ink-3:       #a1a1aa;
+  --ink-4:       #d4d4d8;
+  --accent:      #ea580c;
+  --accent-soft: rgba(234,88,12,0.1);
+  --accent-line: rgba(234,88,12,0.25);
+  --green:       #16a34a;
+  --green-soft:  rgba(22,163,74,0.1);
+  --red:         #dc2626;
+  --red-soft:    rgba(220,38,38,0.08);
+  --yellow:      #ca8a04;
+  --radius:      10px;
+}
+
+[data-theme="dark"] {
   --bg:          #0b0b0d;
   --panel:       #141417;
   --panel-2:     #1a1a1e;
@@ -19,7 +41,6 @@
   --red:         #f87171;
   --red-soft:    rgba(248,113,113,0.10);
   --yellow:      #facc15;
-  --radius:      10px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

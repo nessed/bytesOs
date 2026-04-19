@@ -16,6 +16,12 @@ export default function App() {
   const [logOpen, setLogOpen] = useState(false);
   const [paidIds, setPaidIds] = useState<Set<number>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+  }, [isDark]);
 
   const loadDashboard = () =>
     fetch('/api/dashboard')
@@ -39,7 +45,7 @@ export default function App() {
   if (error) {
     return (
       <div className="app">
-        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
+        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
         <main className="main">
           <div className="error-state">{error}</div>
         </main>
@@ -50,7 +56,7 @@ export default function App() {
   if (!data) {
     return (
       <div className="app">
-        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
+        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
         <main className="main">
           <div className="loading-state">
             <div className="spinner" />
@@ -65,7 +71,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
+      <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
 
       <main className="main">
         <div className="greeting">
