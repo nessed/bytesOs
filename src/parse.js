@@ -41,7 +41,11 @@ function parseSheet(ws, sheetName) {
     const order = row[3];
     const paid = row[4];
 
-    if (typeof num === 'number' && typeof name === 'string' && name.trim() !== '') {
+    const nameIsValid = typeof name === 'string' &&
+      name.trim() !== '' &&
+      name.trim().replace(/[^a-zA-Z0-9]/g, '').length >= 2;
+
+    if (typeof num === 'number' && nameIsValid) {
       const amount = parseOrderAmount(order);
       orders.push({
         slot: currentSlot,

@@ -12,7 +12,12 @@
       "Bash(pkill -f \"node src/server.js\")",
       "Bash(taskkill /F /IM node.exe)",
       "Bash(netstat -ano)",
-      "Bash(taskkill //F //PID 52108)"
+      "Bash(taskkill //F //PID 52108)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -I{} taskkill //F //PID {})",
+      "Bash(npm --version)",
+      "Bash(npm create *)",
+      "Bash(npm run *)"
     ]
   }
 }
