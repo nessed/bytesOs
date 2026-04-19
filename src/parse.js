@@ -20,7 +20,7 @@ function parseDate(sheetName) {
   const day = parseInt(match[1]);
   const month = parseInt(match[2]);
   if (day < 1 || day > 31 || month < 1 || month > 12) return null;
-  return new Date(2026, month - 1, day);
+  return `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function parseSheet(ws, sheetName) {
@@ -50,7 +50,7 @@ function parseSheet(ws, sheetName) {
         order: order || '',
         amount,
         paid: paid === true,
-        date: date.toISOString().split('T')[0],
+        date,
         sheetName,
       });
     }
