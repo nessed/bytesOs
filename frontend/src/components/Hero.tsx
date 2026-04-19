@@ -15,6 +15,7 @@ const ArrowDown = () => (
 );
 
 function Delta({ cur, prev }: { cur: number; prev: number }) {
+  if (prev === 0) return null;
   const p = ((cur - prev) / prev) * 100;
   const up = p >= 0;
   return (
@@ -29,7 +30,10 @@ interface Props {
 }
 
 export default function Hero({ m }: Props) {
-  const progress = Math.min(100, (m.todayRevenue / m.todayTarget) * 100);
+  const todayProfit = m.todayProfit ?? Math.round((m.todayRevenue ?? 0) * 0.52);
+  const todayPerPerson = m.todayPerPerson ?? Math.round(todayProfit / 4);
+  const weekProfit = m.weekProfit ?? Math.round((m.weekRevenue ?? 0) * 0.52);
+  const progress = Math.min(100, ((m.todayRevenue ?? 0) / (m.todayTarget || 1)) * 100);
   return (
     <section className="hero">
       <div className="hero-today">
@@ -45,6 +49,16 @@ export default function Hero({ m }: Props) {
           <span>·</span>
           <span>avg <strong className="num">{fmtK(m.avgOrder)}</strong></span>
         </div>
+        <div className="hero-profit-row">
+          <div className="profit-chip">
+            <span className="profit-chip-label">profit</span>
+            <span className="profit-chip-val num">{fmt(todayProfit)}</span>
+          </div>
+          <div className="profit-chip">
+            <span className="profit-chip-label">per person</span>
+            <span className="profit-chip-val num">{fmt(todayPerPerson)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="hero-side">
@@ -52,9 +66,10 @@ export default function Hero({ m }: Props) {
           <div className="side-label">This week</div>
           <div className="side-value">{fmt(m.weekRevenue)}</div>
           <div className="side-sub">
-            {m.weekPrev > 0 && <Delta cur={m.weekRevenue} prev={m.weekPrev} />}
+            <Delta cur={m.weekRevenue} prev={m.weekPrev} />
             <span>vs last week</span>
           </div>
+          <div className="side-profit">profit {fmt(weekProfit)}</div>
         </div>
         <div className="side-stat">
           <div className="side-label">Outstanding</div>

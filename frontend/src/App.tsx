@@ -5,6 +5,7 @@ import RevenueChart from './components/RevenueChart';
 import ActivityFeed from './components/ActivityFeed';
 import UnpaidToday from './components/UnpaidToday';
 import LogPanel from './components/LogPanel';
+import DailyTracker from './components/DailyTracker';
 import type { DashboardData } from './types';
 import './App.css';
 
@@ -14,13 +15,22 @@ export default function App() {
   const [range, setRange] = useState('14d');
   const [logOpen, setLogOpen] = useState(false);
   const [paidIds, setPaidIds] = useState<Set<number>>(new Set());
+  const [syncing, setSyncing] = useState(false);
 
-  useEffect(() => {
+  const loadDashboard = () =>
     fetch('/api/dashboard')
       .then(r => r.json())
       .then(setData)
       .catch(() => setError('Failed to connect to server.'));
-  }, []);
+
+  useEffect(() => { loadDashboard(); }, []);
+
+  const onSync = async () => {
+    setSyncing(true);
+    await fetch('/api/refresh', { method: 'POST' });
+    await loadDashboard();
+    setSyncing(false);
+  };
 
   const onMarkPaid = (id: number) => {
     setPaidIds(s => new Set([...s, id]));
@@ -29,7 +39,7 @@ export default function App() {
   if (error) {
     return (
       <div className="app">
-        <TopBar onOpenLog={() => setLogOpen(true)} />
+        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
         <main className="main">
           <div className="error-state">{error}</div>
         </main>
@@ -40,7 +50,7 @@ export default function App() {
   if (!data) {
     return (
       <div className="app">
-        <TopBar onOpenLog={() => setLogOpen(true)} />
+        <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
         <main className="main">
           <div className="loading-state">
             <div className="spinner" />
@@ -51,9 +61,11 @@ export default function App() {
     );
   }
 
+  const todayDate = data.dailyBreakdown?.[0]?.date ?? '';
+
   return (
     <div className="app">
-      <TopBar onOpenLog={() => setLogOpen(true)} />
+      <TopBar onOpenLog={() => setLogOpen(true)} onSync={onSync} syncing={syncing} />
 
       <main className="main">
         <div className="greeting">
@@ -62,12 +74,14 @@ export default function App() {
         </div>
 
         <Hero m={data.metrics} />
-        <RevenueChart rev14={data.rev14} chartLabels={data.chartLabels} range={range} setRange={setRange} />
+        <RevenueChart revData={data.revData ?? []} revLabels={data.revLabels ?? []} range={range} setRange={setRange} />
 
         <div className="bottom">
           <ActivityFeed data={data.activity} />
           <UnpaidToday data={data.openOrders} paidIds={paidIds} onMarkPaid={onMarkPaid} />
         </div>
+
+        <DailyTracker data={data.dailyBreakdown ?? []} todayDate={todayDate} />
       </main>
 
       {logOpen && <LogPanel onClose={() => setLogOpen(false)} />}

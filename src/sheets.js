@@ -2,7 +2,7 @@ const { google } = require('googleapis');
 const { parseSheetRows } = require('./parse');
 
 const SPREADSHEET_ID = '1UECxYHAfoJ840HzU0OksSWJhsDnuwvcmttQz1kVW9yE';
-const SKIP_SHEETS = new Set(['Template To Duplicate', 'Finances']);
+const SKIP_SHEETS = new Set(['Finances']);
 
 function getAuth() {
   const keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
@@ -19,10 +19,17 @@ async function fetchAllOrders() {
 
   // Get sheet names
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, fields: 'sheets.properties.title' });
-  const sheetTitles = meta.data.sheets
-    .map(s => s.properties.title)
+  const allTitles = meta.data.sheets.map(s => s.properties.title);
+  console.log(`[sheets] All tabs: ${allTitles.join(', ')}`);
+
+  // Skip position 0 (template) and any explicitly excluded tabs.
+  // Remaining sheets are already in ascending date order per spreadsheet convention.
+  const sheetTitles = allTitles
+    .slice(1)
     .filter(t => !SKIP_SHEETS.has(t));
 
+  console.log(`[sheets] Processing (${sheetTitles.length} sheets): ${sheetTitles.join(', ')}`);
+  console.log(`[sheets] Last sheet in list: "${sheetTitles[sheetTitles.length - 1]}"`);
   if (sheetTitles.length === 0) return [];
 
   // Fetch all sheets in one batch request
@@ -36,14 +43,18 @@ async function fetchAllOrders() {
 
   const allOrders = [];
   for (const vr of batch.data.valueRanges || []) {
-    // Range looks like "'17  04'" — extract sheet title
     const sheetName = vr.range.split('!')[0].replace(/^'|'$/g, '');
     const rows = vr.values || [];
     const orders = parseSheetRows(rows, sheetName);
-    if (orders) allOrders.push(...orders);
+    if (orders) {
+      console.log(`  [sheet] "${sheetName}" → ${orders.length} orders`);
+      allOrders.push(...orders);
+    } else {
+      console.log(`  [sheet] "${sheetName}" → skipped (name didn't match DDMM pattern)`);
+    }
   }
 
-  allOrders.sort((a, b) => a.date.localeCompare(b.date));
+  allOrders.sort((a, b) => a.businessDate.localeCompare(b.businessDate));
   return allOrders;
 }
 

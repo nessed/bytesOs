@@ -11,12 +11,11 @@ function parseOrderAmount(orderStr) {
 }
 
 function parseDate(sheetName) {
-  // Handles "17  04", "09  03", "28  02 ", "0303", "1604"
-  const cleaned = sheetName.trim().replace(/\s+/g, '');
-  const match = cleaned.match(/^(\d{2})(\d{2})$/);
-  if (!match) return null;
-  const day = parseInt(match[1]);
-  const month = parseInt(match[2]);
+  // Strip all non-digit chars — handles "17  04", "17/04", "17-04", "1704", etc.
+  const digits = sheetName.trim().replace(/\D/g, '');
+  if (digits.length !== 4) return null;
+  const day = parseInt(digits.slice(0, 2));
+  const month = parseInt(digits.slice(2, 4));
   if (day < 1 || day > 31 || month < 1 || month > 12) return null;
   return `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
@@ -55,6 +54,7 @@ function parseSheetRows(rows, sheetName) {
         amount,
         paid,
         date,
+        businessDate: date, // Normalized business date derived from sheet boundary
         sheetName,
       });
     }

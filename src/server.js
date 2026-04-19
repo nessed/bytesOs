@@ -6,7 +6,7 @@ const { fetchAllOrders } = require('./sheets');
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
-const REFRESH_MS = 5 * 60 * 1000; // re-fetch from Sheets every 5 minutes
+const REFRESH_MS = 5 * 60 * 1000;
 
 let orders = [];
 let lastRefresh = null;
@@ -19,6 +19,23 @@ async function refresh() {
   } catch (e) {
     console.error('Failed to fetch from Google Sheets:', e.message);
   }
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Pakistan Standard Time = UTC+5, no DST
+const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+// Returns the current calendar date in PKT (UTC+5)
+function getBusinessDate(now = new Date()) {
+  // Shift UTC → PKT by adding 5 h, then read date via UTC methods
+  const pkt = new Date(now.getTime() + PKT_OFFSET_MS);
+  const result = pkt.toISOString().slice(0, 10); // YYYY-MM-DD in PKT
+  console.log(`[getBusinessDate] UTC=${now.toISOString()} → PKT date=${result}`);
+  return result;
 }
 
 function buildSummary() {
@@ -72,21 +89,31 @@ function buildCustomers() {
 }
 
 function buildDashboard() {
-  const dates = [...new Set(orders.map(o => o.date))].sort();
-  const today = dates[dates.length - 1] || '';
+  const today = getBusinessDate(); // always the current PKT business day
+
+  // Historical dates with orders, capped at today (exclude any future sheets)
+  const pastDates = [...new Set(orders.map(o => o.date))].sort().filter(d => d <= today);
 
   const todayOrders = orders.filter(o => o.date === today);
   const todayRevenue = todayOrders.reduce((s, o) => s + o.amount, 0);
   const todayCount = todayOrders.length;
   const avgOrder = todayCount > 0 ? Math.round(todayRevenue / todayCount) : 0;
+  const todayProfit = Math.round(todayRevenue * 0.52);
+  const todayPerPerson = Math.round(todayProfit / 4);
 
-  const last14 = dates.slice(-14);
-  const rev14 = last14.map(d => orders.filter(o => o.date === d).reduce((s, o) => s + o.amount, 0));
+  // Chart uses all known past dates (today included if it has data)
+  const chartDates = pastDates.slice(-30);
+  const revData = chartDates.map(d => orders.filter(o => o.date === d).reduce((s, o) => s + o.amount, 0));
+  const revLabels = chartDates.map(d => {
+    const dt = new Date(d + 'T00:00:00Z');
+    return `${MONTH_SHORT[dt.getUTCMonth()]} ${dt.getUTCDate()}`;
+  });
 
-  const last7 = dates.slice(-7);
-  const prev7 = dates.slice(-14, -7);
+  const last7 = pastDates.slice(-7);
+  const prev7 = pastDates.slice(-14, -7);
   const weekRevenue = orders.filter(o => last7.includes(o.date)).reduce((s, o) => s + o.amount, 0);
   const weekPrev = orders.filter(o => prev7.includes(o.date)).reduce((s, o) => s + o.amount, 0);
+  const weekProfit = Math.round(weekRevenue * 0.52);
 
   const unpaidOrders = orders.filter(o => !o.paid);
   const outstanding = unpaidOrders.reduce((s, o) => s + o.amount, 0);
@@ -96,7 +123,12 @@ function buildDashboard() {
   }
   const outstandingCount = Object.keys(outstandingByCustomer).length;
 
-  const todayTarget = Math.max(todayRevenue, Math.round(todayRevenue * 1.15));
+  // Yesterday = most recent past date that is before today
+  const yesterday = pastDates.filter(d => d < today).slice(-1)[0] || '';
+  const yesterdayRevenue = yesterday
+    ? orders.filter(o => o.date === yesterday).reduce((s, o) => s + o.amount, 0)
+    : 0;
+  const todayTarget = yesterdayRevenue > 0 ? Math.round(yesterdayRevenue * 1.1) : Math.round(todayRevenue * 1.15) || 1;
 
   const activity = todayOrders.slice().reverse().map((o, i) => ({
     id: i + 1,
@@ -113,21 +145,25 @@ function buildDashboard() {
     who: o.name,
     order: o.order,
     amount: o.amount,
-    age: `${Math.max(1, Math.floor(Math.random() * 4) + 1)}h`,
     slot: o.slot || 'Lunch',
   }));
 
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const todayDate = today ? new Date(today + 'T12:00:00') : new Date();
-  const dayName = dayNames[todayDate.getDay()];
-  const monthName = monthNames[todayDate.getMonth()];
-  const dayNum = todayDate.getDate();
-  const todayLabel = `${dayName}, ${monthName} ${dayNum}`;
+  const todayDate = today ? new Date(today + 'T00:00:00Z') : new Date();
+  const todayLabel = `${DAY_NAMES[todayDate.getUTCDay()]}, ${MONTH_NAMES[todayDate.getUTCMonth()]} ${todayDate.getUTCDate()}`;
 
-  const chartLabels = last14.map(d => {
-    const dt = new Date(d + 'T12:00:00');
-    return `${monthNames[dt.getMonth()].slice(0, 3)} ${dt.getDate()}`;
+  // Daily breakdown — all dates descending (newest first)
+  const maxRev = Math.max(...pastDates.map(d => orders.filter(o => o.date === d).reduce((s, o) => s + o.amount, 0)), 0);
+  const dailyBreakdown = [...pastDates].reverse().map(date => {
+    const dayOrds = orders.filter(o => o.date === date);
+    const revenue = dayOrds.reduce((s, o) => s + o.amount, 0);
+    const profit = Math.round(revenue * 0.52);
+    const perPerson = Math.round(profit / 4);
+    const count = dayOrds.length;
+    const unpaidCount = dayOrds.filter(o => !o.paid).length;
+    const dt = new Date(date + 'T00:00:00Z');
+    const label = `${DAY_SHORT[dt.getUTCDay()]} ${MONTH_SHORT[dt.getUTCMonth()]} ${dt.getUTCDate()}`;
+    const isBest = revenue === maxRev && maxRev > 0;
+    return { date, label, revenue, profit, perPerson, count, unpaidCount, isBest };
   });
 
   return {
@@ -139,14 +175,18 @@ function buildDashboard() {
       todayTarget,
       weekRevenue,
       weekPrev,
+      weekProfit,
       outstanding,
       outstandingCount,
       avgOrder,
+      todayProfit,
+      todayPerPerson,
     },
-    rev14,
-    chartLabels,
+    revData,
+    revLabels,
     activity: activity.slice(0, 10),
     openOrders,
+    dailyBreakdown,
   };
 }
 

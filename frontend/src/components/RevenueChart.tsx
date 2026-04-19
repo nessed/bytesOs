@@ -1,21 +1,24 @@
 interface Props {
-  rev14: number[];
-  chartLabels: string[];
+  revData: number[];
+  revLabels: string[];
   range: string;
   setRange: (r: string) => void;
 }
 
-export default function RevenueChart({ rev14, chartLabels, range, setRange }: Props) {
-  const series = rev14;
+export default function RevenueChart({ revData, revLabels, range, setRange }: Props) {
+  const n = range === '7d' ? 7 : range === '30d' ? 30 : 14;
+  const series = revData.slice(-n);
+  const labels = revLabels.slice(-n);
+
   if (series.length < 2) return null;
 
-  const W = 800, H = 180, padT = 10, padB = 10, padL = 0, padR = 0;
-  const innerW = W - padL - padR, innerH = H - padT - padB;
-  const max = Math.max(...series), min = 0;
-  const stepX = innerW / (series.length - 1);
+  const W = 800, H = 180, padT = 10, padB = 10;
+  const innerH = H - padT - padB;
+  const max = Math.max(...series);
+  const stepX = W / (series.length - 1);
   const points = series.map((v, i) => [
-    padL + i * stepX,
-    padT + innerH - ((v - min) / (max - min || 1)) * innerH,
+    i * stepX,
+    padT + innerH - ((v) / (max || 1)) * innerH,
   ]);
   const d = points.reduce((acc, [x, y], i) => {
     if (i === 0) return `M${x},${y}`;
@@ -26,19 +29,22 @@ export default function RevenueChart({ rev14, chartLabels, range, setRange }: Pr
   const area = d + ` L${points[points.length - 1][0]},${H - padB} L${points[0][0]},${H - padB} Z`;
   const todayIdx = series.length - 1;
 
-  const labels = chartLabels.length >= 4
-    ? [chartLabels[0], chartLabels[Math.floor(chartLabels.length / 3)], chartLabels[Math.floor(chartLabels.length * 2 / 3)], 'today']
-    : [...chartLabels.slice(0, -1), 'today'];
+  const axisLabels = labels.length >= 4
+    ? [labels[0], labels[Math.floor(labels.length / 3)], labels[Math.floor(labels.length * 2 / 3)], 'today']
+    : [...labels.slice(0, -1), 'today'];
+
+  const totalRevenue = series.reduce((s, v) => s + v, 0);
+  const fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, '') + 'k' : String(n);
 
   return (
     <section className="chart-section">
       <div className="section-head">
         <div>
           <span className="section-title">Revenue</span>
-          <span className="section-sub">last {series.length} days</span>
+          <span className="section-sub">last {series.length} days · PKR {fmt(totalRevenue)}</span>
         </div>
         <div className="seg">
-          {['7d', '14d', '30d'].map(r => (
+          {(['7d', '14d', '30d'] as const).map(r => (
             <button key={r} className={range === r ? 'on' : ''} onClick={() => setRange(r)}>{r}</button>
           ))}
         </div>
@@ -59,7 +65,7 @@ export default function RevenueChart({ rev14, chartLabels, range, setRange }: Pr
       </svg>
 
       <div className="bigchart-axis">
-        {labels.map((l, i) => <span key={i}>{l}</span>)}
+        {axisLabels.map((l, i) => <span key={i}>{l}</span>)}
       </div>
     </section>
   );

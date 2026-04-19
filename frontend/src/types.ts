@@ -39,9 +39,12 @@ export interface Metrics {
   todayTarget: number;
   weekRevenue: number;
   weekPrev: number;
+  weekProfit: number;
   outstanding: number;
   outstandingCount: number;
   avgOrder: number;
+  todayProfit: number;
+  todayPerPerson: number;
 }
 
 export interface ActivityItem {
@@ -60,15 +63,27 @@ export interface OpenOrder {
   who: string;
   order: string;
   amount: number;
-  age: string;
   slot: string;
+}
+
+export interface DailyBreakdown {
+  date: string;
+  label: string;
+  revenue: number;
+  profit: number;
+  perPerson: number;
+  count: number;
+  unpaidCount: number;
+  isBest: boolean;
 }
 
 export interface DashboardData {
   today: string;
+  lastRefresh: string | null;
   metrics: Metrics;
-  rev14: number[];
-  chartLabels: string[];
+  revData: number[];
+  revLabels: string[];
   activity: ActivityItem[];
   openOrders: OpenOrder[];
+  dailyBreakdown: DailyBreakdown[];
 }

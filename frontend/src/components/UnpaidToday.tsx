@@ -35,8 +35,6 @@ export default function UnpaidToday({ data, paidIds, onMarkPaid }: Props) {
               <span className="row-what">· {fmtOrder(o.order)}</span>
             </div>
             <div className="row-line2">
-              <span>{o.age} ago</span>
-              <span>·</span>
               <span>{o.slot.toLowerCase()}</span>
             </div>
           </div>
