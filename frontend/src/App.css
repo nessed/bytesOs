@@ -623,14 +623,29 @@ button { font-family: inherit; cursor: pointer; }
   .hero { grid-template-columns: 1fr; gap: 28px; }
   .bottom { grid-template-columns: 1fr; gap: 32px; }
   .main { padding: 24px 20px 48px; }
-  .topbar { padding: 12px 20px; }
-  .hero-value { font-size: 44px; }
+  .topbar { padding: 16px 20px; flex-direction: column; align-items: stretch; gap: 16px; height: auto; }
+  .tb-left { flex-direction: column; align-items: stretch; gap: 16px; }
+  .tb-right { justify-content: space-between; }
+  .view-switcher { width: 100%; display: flex; flex-wrap: wrap; }
+  .view-tab { flex: 1; text-align: center; }
+  .hero-value { font-size: 40px; }
   .daily-header,
   .daily-row { grid-template-columns: 1.4fr 0.5fr 1fr 1fr; }
   .daily-pp { display: none; }
   .daily-header span:last-child { display: none; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
+  .hero-side { grid-template-columns: 1fr; gap: 16px; }
+  .finances-hero { grid-template-columns: 1fr !important; }
 }
+
+@media (max-width: 500px) {
+  .summary-grid { grid-template-columns: 1fr; }
+  .table-card { border-radius: 0; border-left: none; border-right: none; margin: 0 -20px; width: calc(100% + 40px); }
+  .section-header { flex-direction: column; gap: 6px; }
+  .hero-side { grid-template-columns: 1fr; }
+  .detail-table { display: block; overflow-x: auto; }
+}
+
 
 /* ── View Switcher ── */
 .view-switcher {
@@ -773,3 +788,36 @@ tbody tr:hover { background: var(--panel-2); }
 .debt-amount { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--red); min-width: 60px; }
 .debt-bar-bg { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .debt-bar-fill { height: 100%; background: var(--red); border-radius: 3px; transition: width 0.4s ease; }
+
+/* ── Login Screen ── */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 32px 24px;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05);
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+.login-error {
+  color: var(--red);
+  background: var(--red-soft);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}

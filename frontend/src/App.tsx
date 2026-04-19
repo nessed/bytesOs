@@ -10,6 +10,7 @@ import CustomerTable from './components/CustomerTable';
 import DebtTable from './components/DebtTable';
 import Summary from './components/Summary';
 import FinancesView from './components/FinancesView';
+import Login from './components/Login';
 import type { DashboardData, Customer, DebtCustomer, View, Summary as SummaryData, FinancesData } from './types';
 import './App.css';
 
@@ -26,13 +27,15 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [view, setView] = useState<View>('dashboard');
+  const [auth, setAuth] = useState(() => localStorage.getItem('bytes_auth') === 'true');
 
   useEffect(() => {
     if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
   }, [isDark]);
 
-  const loadDashboard = () =>
+  const loadDashboard = () => {
+    if (!auth) return;
     Promise.all([
       fetch('/api/dashboard').then(r => r.json()),
       fetch('/api/customers').then(r => r.json()),
@@ -48,8 +51,9 @@ export default function App() {
         setFinancesData(fin);
       })
       .catch(() => setError('Failed to connect to server.'));
+  };
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => { loadDashboard(); }, [auth]);
 
   const onSync = async () => {
     setSyncing(true);
@@ -61,6 +65,13 @@ export default function App() {
   const onMarkPaid = (id: number) => {
     setPaidIds(s => new Set([...s, id]));
   };
+
+  if (!auth) {
+    return <Login onLogin={() => {
+      localStorage.setItem('bytes_auth', 'true');
+      setAuth(true);
+    }} />;
+  }
 
   if (error) {
     return (

@@ -9,7 +9,7 @@ export default function FinancesView({ data }: { data: FinancesData }) {
         <span className="section-title">Lifetime Performance</span>
       </div>
 
-      <div className="hero-side" style={{ marginBottom: 40, gap: 16, gridTemplateColumns: '1fr 1fr 1fr' }}>
+      <div className="finances-hero" style={{ display: 'grid', marginBottom: 40, gap: 16 }}>
         <div className="stat-card" style={{ '--accent-color': 'var(--green)', '--accent-muted': 'var(--green-soft)' } as React.CSSProperties}>
            <div className="stat-label">Lifetime Revenue</div>
            <div className="stat-value">{fmt(data.lifetimeRevenue)}</div>
